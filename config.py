@@ -6,17 +6,17 @@ import os
 # BASIC SETTINGS
 # ============================================================================
 
-COLUMN_NAME = 'age'
-CSV_NAME = 'dlbs'
-TRAINING_MODE = 'linear'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
-TASK = 'regression'
+COLUMN_NAME = 'ad'
+CSV_NAME = 'ad-cn'
+TRAINING_MODE = 'sfcn'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
+TASK = 'classification'
 
 # ============================================================================
 # DATA PATHS
 # ============================================================================
 
-TRAIN_COHORT = 'ukb'
-TEST_COHORT = 'ukb'
+TRAIN_COHORT = 'adni1-m0'
+TEST_COHORT = 'oasis'
 
 CSV_TRAIN = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
 CSV_VAL = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
@@ -44,12 +44,6 @@ SSL_EPOCHS = 1000
 PRETRAINED_MODEL = (f'/mnt/bulk-neptune/radhika/project/models/ssl/sfcn/{SSL_COHORT}/'
                    f'{SSL_COHORT}{IMG_SIZE}/final_model_b{SSL_BATCH_SIZE}_e{SSL_EPOCHS}.pt')
 
-# Transformer Parameters (for Swin/ViT)
-PATCH_SIZE = [8, 8, 8]
-WINDOW_SIZE = [16, 16, 16]
-NUM_HEADS = [3, 6, 12, 24]
-DEPTHS = [2, 2, 2, 2]
-FEATURE_SIZE = 96
 
 # ============================================================================
 # TRAINING SETTINGS
@@ -74,16 +68,26 @@ SCHEDULER_PATIENCE = 3
 # OUTPUT PATHS
 # ============================================================================
 # Experiment name
-EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_b{BATCH_SIZE}_lr{LEARNING_RATE}_im{IMG_SIZE}"
+EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_nNone_b{BATCH_SIZE}_lr{LEARNING_RATE}_im{IMG_SIZE}_k1"
 
 # Output directories
-SAVE_MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models/{TRAINING_MODE}'
-SCORES_TRAIN_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/train/{TRAIN_COHORT}'
-SCORES_VAL_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/val/{TRAIN_COHORT}'
-SCORES_TEST_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/test/{TEST_COHORT}'
-TRAINLOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/trainlog/{TRAINING_MODE}'
-VALLOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/vallog/{TRAINING_MODE}'
-TIMELOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/timelog/{TRAINING_MODE}'
-EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/logs/'
-MODEL_PATH = os.path.join(SAVE_MODEL_DIR, f'{EXPERIMENT_NAME}.pth')
+MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models/'
+SCORES_DIR = f'/mnt/bulk-neptune/radhika/project/scores'
+LOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs'
+EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/evaluations/'
+EXPLAINABILITY_DIR = f"/mnt/bulk-neptune/radhika/project/explainability/"
+  
+# ============================================================================
+# HEATMAP CONFIGURATION 
+# ============================================================================
+HEATMAP_MODE = 'top_individual'  # Options: 'single', 'average', 'top_individual'
+HEATMAP_TOP_N = 5
+ATTENTION_METHOD = 'saliency'  # Options: 'saliency', 'gradcam'
+ATTENTION_MODE = 'magnitude'  # Options: 'magnitude', 'signed'
+ATTENTION_TARGET = 'logit_diff'  # Options: 'logit_diff', 'pred', 'target_class'
+ATTENTION_CLASS_IDX = None
+ATLAS_PATH = 'atlas_resampled_96.nii.gz'
+
+
+
   
