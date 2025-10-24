@@ -68,7 +68,7 @@ SCHEDULER_PATIENCE = 3
 # OUTPUT PATHS
 # ============================================================================
 # Experiment name
-EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_nNone_b{BATCH_SIZE}_lr{LEARNING_RATE}_im{IMG_SIZE}_k1"
+EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_b{BATCH_SIZE}_im{IMG_SIZE}"
 
 # Output directories
 MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models/'
@@ -87,6 +87,9 @@ ATTENTION_MODE = 'magnitude'  # Options: 'magnitude', 'signed'
 ATTENTION_TARGET = 'logit_diff'  # Options: 'logit_diff', 'pred', 'target_class'
 ATTENTION_CLASS_IDX = None
 ATLAS_PATH = 'atlas_resampled_96.nii.gz'
+
+
+
 
 
 
