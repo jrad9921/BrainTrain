@@ -17,9 +17,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from dataloaders import dataloader
 from architectures import sfcn_cls, sfcn_ssl2, head, lora_layers
-# Import configuration
 import config as cfg
-
 
 def load_model(model_path, device):
     """Load trained model"""
@@ -313,7 +311,7 @@ def test(test_csv, test_cohort, model_path, output_dir, log_dir):
         'label': test_labels,
         'prediction': test_outputs_binary
     })
-    pred_path = os.path.join(output_dir, cfg.EXPERIMENT_NAME)
+    pred_path = os.path.join(output_dir, f'{cfg.TRAINING_MODE}/test/{cfg.TEST_COHORT}/{cfg.EXPERIMENT_NAME}')
     predictions_df.to_csv(pred_path, index=False)
     print(f"\nPredictions saved to {pred_path}")
     
@@ -327,7 +325,7 @@ def test(test_csv, test_cohort, model_path, output_dir, log_dir):
         'AUPRC_CI_lower': ci_auprc_lower,
         'AUPRC_CI_upper': ci_auprc_upper
     }])
-    summary_path = os.path.join(summary_dir, f'{cfg.EXPERIMENT_NAME}.csv')
+    summary_path = os.path.join(summary_dir, f'{cfg.EXPERIMENT_NAME}.')
     summary_df.to_csv(summary_path, index=False)
     print(f"Summary metrics saved to {summary_path}")
     
@@ -360,18 +358,20 @@ def main():
         torch.cuda.set_device(cfg.DEVICE)
     torch.manual_seed(42)
     
+    model_path= f'{cfg.MODEL_DIR}/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.pth'
+
     print("\n" + "="*70)
     print("TEST CONFIGURATION")
     print("="*70)
     print(f"Training mode: {cfg.TRAINING_MODE}")
-    print(f"Model: {cfg.MODEL_PATH}")
+    print(f"Model: f'{model_path}")
     print(f"Test cohort: {cfg.TEST_COHORT}")
     print(f"Test CSV: {cfg.CSV_TEST}")
-    print(f"Output directory: {cfg.SCORES_TEST_DIR}")
+    print(f"Output directory: {cfg.SCORES_DIR}")
     print("="*70)
     
     # Run testing
-    results = test(cfg.CSV_TEST, cfg.TEST_COHORT, cfg.MODEL_PATH, cfg.SCORES_TEST_DIR, cfg.EVALUATION_DIR)
+    results = test(cfg.CSV_TEST, cfg.TEST_COHORT, model_path, cfg.SCORES_DIR, cfg.EVALUATION_DIR)
     
     print("\n✓ All done!")
 
