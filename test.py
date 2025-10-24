@@ -3,7 +3,6 @@ Test script for brain MRI classification
 """
 import os
 import sys
-
 import numpy as np
 import pandas as pd
 import torch
@@ -200,24 +199,39 @@ def plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=None):
     }
 
 
-def test(test_csv, test_cohort, model_path, output_dir):
+def test(test_csv, test_cohort, model_path, output_dir, log_dir):
     """Main test function"""
     device = cfg.DEVICE
-    
     print("\n" + "="*70)
     print("TESTING")
     print("="*70)
     print(f"Test cohort: {test_cohort}")
     print(f"Test CSV: {test_csv}")
     
-    # Create output directory
-    os.makedirs(output_dir, exist_ok=True)
+    # Create log directories
+    roc_dir = os.path.join(log_dir, 'roc')
+    prc_dir = os.path.join(log_dir, 'prc')
+    cm_dir = os.path.join(log_dir, 'cm')
+    metrics_dir = os.path.join(log_dir, 'metrics')
+    summary_dir = os.path.join(log_dir, 'summary')
     
+    os.makedirs(roc_dir, exist_ok=True)
+    os.makedirs(prc_dir, exist_ok=True)
+    os.makedirs(cm_dir, exist_ok=True)
+    os.makedirs(metrics_dir, exist_ok=True)
+    os.makedirs(summary_dir, exist_ok=True)
+    
+    
+    print(f"\nLog directories created:")
+    print(f"  AUROC: {roc_dir}")
+    print(f"  AUPRC: {prc_dir}")
+    print(f"  Confusion Matrix: {cm_dir}")
+    print(f"  Metrics: {metrics_dir}")
+    print(f"  Summary: {summary_dir}")
     # Load model
     model = load_model(model_path, device)
     
     # Create test dataset
-    tensor_dir = f'/mnt/bulk-neptune/radhika/project/images/{test_cohort}/npy{cfg.IMG_SIZE}'
     test_dataset = dataloader.BrainDataset(
         csv_file=cfg.CSV_TEST,
         root_dir=cfg.TENSOR_DIR_TEST,
@@ -313,25 +327,25 @@ def test(test_csv, test_cohort, model_path, output_dir):
         'AUPRC_CI_lower': ci_auprc_lower,
         'AUPRC_CI_upper': ci_auprc_upper
     }])
-    summary_path = os.path.join(output_dir, 'summary_metrics.csv')
+    summary_path = os.path.join(summary_dir, f'{cfg.EXPERIMENT_NAME}.csv')
     summary_df.to_csv(summary_path, index=False)
     print(f"Summary metrics saved to {summary_path}")
     
     # Plot ROC curve
-    roc_path = os.path.join(output_dir, 'roc_curve.png')
+    roc_path = os.path.join(roc_dir, f'{cfg.EXPERIMENT_NAME}.png')
     plot_roc_curve(y_true, y_score, test_cohort, save_path=roc_path)
     
     # Plot PRC curve
-    prc_path = os.path.join(output_dir, 'prc_curve.png')
+    prc_path = os.path.join(prc_dir, f'{cfg.EXPERIMENT_NAME}.png')
     plot_prc_curve(y_true, y_score, test_cohort, save_path=prc_path)
     
     # Plot confusion matrix
-    cm_path = os.path.join(output_dir, 'confusion_matrix.png')
+    cm_path = os.path.join(cm_dir, f'{cfg.EXPERIMENT_NAME}.png')
     cm_metrics = plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=cm_path)
     
     # Save confusion matrix metrics
     cm_df = pd.DataFrame([cm_metrics])
-    cm_metrics_path = os.path.join(output_dir, 'confusion_matrix_metrics.csv')
+    cm_metrics_path = os.path.join(metrics_dir, f'{cfg.EXPERIMENT_NAME}.csv')
     cm_df.to_csv(cm_metrics_path, index=False)
     print(f"Confusion matrix metrics saved to {cm_metrics_path}")
     
@@ -346,9 +360,6 @@ def main():
         torch.cuda.set_device(cfg.DEVICE)
     torch.manual_seed(42)
     
-    # Test configuration - MODIFY THESE
-    MODEL_PATH = os.path.join(cfg.SAVE_MODEL_DIR, f'{cfg.EXPERIMENT_NAME}_best.pth')
-  
     print("\n" + "="*70)
     print("TEST CONFIGURATION")
     print("="*70)
@@ -360,10 +371,9 @@ def main():
     print("="*70)
     
     # Run testing
-    results = test(cfg.CSV_TEST, cfg.TEST_COHORT, cfg.MODEL_PATH, cfg.SCORES_TEST_DIR)
+    results = test(cfg.CSV_TEST, cfg.TEST_COHORT, cfg.MODEL_PATH, cfg.SCORES_TEST_DIR, cfg.EVALUATION_DIR)
     
     print("\n✓ All done!")
-
 
 if __name__ == "__main__":
     main()
