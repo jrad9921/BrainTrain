@@ -6,24 +6,24 @@ import os
 # BASIC SETTINGS
 # ============================================================================
 
-COLUMN_NAME = 'ms'
-TRAINING_MODE = 'lora'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
+COLUMN_NAME = 'age'
+CSV_NAME = 'dlbs'
+TRAINING_MODE = 'linear'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
+TASK = 'regression'
 
 # ============================================================================
 # DATA PATHS
 # ============================================================================
-DATA_DIR = f'/mnt/bulk-neptune/radhika/project/data/'
 
-TRAIN_COHORT = 'mspaths'
-CSV_TRAIN = f'{DATA_DIR}/{TRAIN_COHORT}/train/{COLUMN_NAME}-cn_balanced.csv'
-CSV_VAL = f'{DATA_DIR}/{TRAIN_COHORT}/val/{COLUMN_NAME}-cn_balanced.csv'
+TRAIN_COHORT = 'ukb'
+TEST_COHORT = 'ukb'+6
+
+CSV_TRAIN = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
+CSV_VAL = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
+CSV_TEST = f'/mnt/bulk-neptune/radhika/project/data/{TEST_COHORT}/test/{CSV_NAME}.csv'
+
 TENSOR_DIR = f'/mnt/bulk-neptune/radhika/project/images/{TRAIN_COHORT}/npy96'
-
-# TEST PATHS
-TEST_COHORT = 'mspaths2'
-CSV_TEST = f'{DATA_DIR}/{TEST_COHORT}/test/{COLUMN_NAME}-cn_balanced.csv'
 TENSOR_DIR_TEST = f'/mnt/bulk-neptune/radhika/project/images/{TEST_COHORT}/npy96'
-
 
 # ============================================================================
 # MODEL SETTINGS
@@ -74,15 +74,16 @@ SCHEDULER_PATIENCE = 3
 # OUTPUT PATHS
 # ============================================================================
 # Experiment name
-EXPERIMENT_NAME = f"{COLUMN_NAME}-cn_balanced-_e{NUM_EPOCHS}_b{BATCH_SIZE}_lr{LEARNING_RATE}_im{IMG_SIZE}_best"
+EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_b{BATCH_SIZE}_lr{LEARNING_RATE}_im{IMG_SIZE}"
 
 # Output directories
 SAVE_MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models/{TRAINING_MODE}'
-SCORES_TRAIN_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/train'
-SCORES_VAL_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/val'
+SCORES_TRAIN_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/train/{TRAIN_COHORT}'
+SCORES_VAL_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/val/{TRAIN_COHORT}'
 SCORES_TEST_DIR = f'/mnt/bulk-neptune/radhika/project/scores/{TRAINING_MODE}/test/{TEST_COHORT}'
 TRAINLOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/trainlog/{TRAINING_MODE}'
 VALLOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/vallog/{TRAINING_MODE}'
 TIMELOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs/timelog/{TRAINING_MODE}'
+EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/logs/'
 MODEL_PATH = os.path.join(SAVE_MODEL_DIR, f'{EXPERIMENT_NAME}.pth')
   
