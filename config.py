@@ -2,28 +2,51 @@
 Simple configuration file for brain MRI classification training
 """
 import os 
+import argparse
+
+parser = argparse.ArgumentParser(description='run training')
+parser.add_argument('-c', '--column', type=str, nargs='*', default=None, help='Select one  target column for trainig')
+parser.add_argument('-m', '--mode', type=str, nargs='*', default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
+parser.add_argument('-g', '--gpu', type=str, nargs='*', default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
+args = parser.parse_args()
+
+
+
 # ============================================================================
 # BASIC SETTINGS
 # ============================================================================
 
-COLUMN_NAME = 'ad'
-CSV_NAME = 'ad-cn'
+
+
+
+
+COLUMN_NAME = 'last_progression_pst_15z'
+CSV_NAME = 'last_progression_pst_15z'
 TRAINING_MODE = 'sfcn'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
 TASK = 'classification'
+
+if not args.column is None:
+    COLUMN_NAME = args.column
+    CSV_NAME = args.column
+
+if not args.mode is None:
+    TRAINING_MODE = args.mode
+
+
 
 # ============================================================================
 # DATA PATHS
 # ============================================================================
 
-TRAIN_COHORT = 'adni1-m0'
-TEST_COHORT = 'oasis'
+TRAIN_COHORT = 'mspaths'
+TEST_COHORT = 'mspaths2'
 
-CSV_TRAIN = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
-CSV_VAL = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
-CSV_TEST = f'/mnt/bulk-neptune/radhika/project/data/{TEST_COHORT}/test/{CSV_NAME}.csv'
+CSV_TRAIN = f'data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
+CSV_VAL = f'data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
+CSV_TEST = f'data/{TEST_COHORT}/test/{CSV_NAME}.csv'
 
-TENSOR_DIR = f'/mnt/bulk-neptune/radhika/project/images/{TRAIN_COHORT}/npy96'
-TENSOR_DIR_TEST = f'/mnt/bulk-neptune/radhika/project/images/{TEST_COHORT}/npy96'
+TENSOR_DIR = f'images/{TRAIN_COHORT}/npy96'
+TENSOR_DIR_TEST = f'images/{TEST_COHORT}/npy96'
 
 # ============================================================================
 # MODEL SETTINGS
@@ -41,7 +64,7 @@ LORA_TARGET_MODULES = ['feature_extractor.conv_']
 SSL_COHORT = 'ukb-nako'
 SSL_BATCH_SIZE = 16
 SSL_EPOCHS = 1000
-PRETRAINED_MODEL = (f'/mnt/bulk-neptune/radhika/project/models/ssl/sfcn/{SSL_COHORT}/'
+PRETRAINED_MODEL = (f'models/ssl/sfcn/{SSL_COHORT}/'
                    f'{SSL_COHORT}{IMG_SIZE}/final_model_b{SSL_BATCH_SIZE}_e{SSL_EPOCHS}.pt')
 
 
@@ -52,7 +75,11 @@ BATCH_SIZE = 32
 NUM_EPOCHS = 1000
 LEARNING_RATE = 0.1
 NUM_WORKERS = 8
-DEVICE = "cuda:1"
+DEVICE = "cuda:0"
+
+if not args.gpu is None:
+    DEVICE = args.gpu
+
 SEED = 42
 NROWS = None  # Set to None to use all data, or int for subset
 
@@ -71,11 +98,11 @@ SCHEDULER_PATIENCE = 3
 EXPERIMENT_NAME = f"{CSV_NAME}_e{NUM_EPOCHS}_b{BATCH_SIZE}_im{IMG_SIZE}"
 
 # Output directories
-MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models/'
-SCORES_DIR = f'/mnt/bulk-neptune/radhika/project/scores'
-LOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs'
-EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/evaluations/'
-EXPLAINABILITY_DIR = f"/mnt/bulk-neptune/radhika/project/explainability/"
+MODEL_DIR = f'models/'
+SCORES_DIR = f'scores'
+LOG_DIR = f'logs'
+EVALUATION_DIR = f'evaluations/'
+EXPLAINABILITY_DIR = f"explainability/"
   
 # ============================================================================
 # HEATMAP CONFIGURATION 
@@ -87,9 +114,6 @@ ATTENTION_MODE = 'magnitude'  # Options: 'magnitude', 'signed'
 ATTENTION_TARGET = 'logit_diff'  # Options: 'logit_diff', 'pred', 'target_class'
 ATTENTION_CLASS_IDX = None
 ATLAS_PATH = 'atlas_resampled_96.nii.gz'
-
-
-
 
 
 
