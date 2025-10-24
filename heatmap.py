@@ -243,11 +243,29 @@ def load_image(path, device):
     return img_t, img_np
 
 
-def save_visualization(heatmap, image, name, output_dir, signed=False):
-    """Save heatmap visualization as overlays"""
+def save_visualization(heatmap, image, name, output_dir, signed=False, affine=None):
+    """Save heatmap visualization as overlays AND NIfTI files"""
+    import nibabel as nib
+    
     os.makedirs(output_dir, exist_ok=True)
     
-    # Select slices
+    # Default affine if none provided
+    if affine is None:
+        affine = np.eye(4)
+    
+    # Save brain image as NIfTI
+    brain_nifti_path = os.path.join(output_dir, f"{name}_brain.nii.gz")
+    brain_img = nib.Nifti1Image(image, affine)
+    nib.save(brain_img, brain_nifti_path)
+    print(f"Saved brain NIfTI: {brain_nifti_path}")
+    
+    # Save heatmap as NIfTI
+    heatmap_nifti_path = os.path.join(output_dir, f"{name}_heatmap.nii.gz")
+    heatmap_img = nib.Nifti1Image(heatmap, affine)
+    nib.save(heatmap_img, heatmap_nifti_path)
+    print(f"Saved heatmap NIfTI: {heatmap_nifti_path}")
+    
+    # === PNG visualization (unchanged) ===
     D, H, W = image.shape
     slices = {
         'axial': D // 2,
@@ -270,10 +288,8 @@ def save_visualization(heatmap, image, name, output_dir, signed=False):
             img_slice = image[:, :, slice_idx]
             heat_slice = heatmap[:, :, slice_idx]
         
-        # Display image
         ax.imshow(img_slice.T, cmap='gray', origin='lower')
         
-        # Overlay heatmap
         if signed:
             im = ax.imshow(heat_slice.T, cmap='RdBu_r', alpha=0.5, 
                           vmin=-np.abs(heat_slice).max(), vmax=np.abs(heat_slice).max(),
@@ -293,7 +309,7 @@ def save_visualization(heatmap, image, name, output_dir, signed=False):
     save_path = os.path.join(output_dir, f"{name}.png")
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Saved: {save_path}")
+    print(f"Saved PNG: {save_path}")
 
 
 def generate_heatmaps(heatmap_dir, attention_method='gradcam', 
@@ -486,6 +502,9 @@ def main():
     
     print("\n✓ All done!")
 
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
