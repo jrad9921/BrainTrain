@@ -33,11 +33,8 @@ def create_directories():
     """Create all necessary output directories"""
     dirs = [
         cfg.MODEL_DIR,
-        cfg.SCORES_TRAIN_DIR,
-        cfg.SCORES_VAL_DIR,
-        cfg.TRAINLOG_DIR,
-        cfg.VALLOG_DIR,
-        cfg.TIMELOG_DIR,
+        cfg.SCORES_DIR,
+        cfg.LOG_DIR
     ]
     for directory in dirs:
         os.makedirs(directory, exist_ok=True)
