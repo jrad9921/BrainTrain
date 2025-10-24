@@ -324,9 +324,10 @@ def generate_heatmaps(heatmap_dir, attention_method='gradcam',
     
     # Create output directories
     os.makedirs(heatmap_dir, exist_ok=True)
-    
+    model_path=f'{cfg.MODEL_DIR}/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.pth'
+
     # Load model
-    model = load_model(cfg.MODEL_PATH, device)
+    model = load_model(model_path, device)
     
     # Get target layer for GradCAM
     if attention_method == 'gradcam':
@@ -457,7 +458,7 @@ def main():
     print("HEATMAP CONFIGURATION")
     print("="*70)
     print(f"Training mode: {cfg.TRAINING_MODE}")
-    print(f"Model: {cfg.MODEL_PATH}")
+    print(f"Model: {cfg.MODEL_DIR}")
     print(f"Test cohort: {cfg.TEST_COHORT}")
     print(f"Test CSV: {cfg.CSV_TEST}")
     print("="*70)
@@ -485,6 +486,9 @@ def main():
     
     print("\n✓ All done!")
 
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__":
     main()
