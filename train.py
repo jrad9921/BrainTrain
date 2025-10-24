@@ -32,7 +32,7 @@ def set_seed(seed):
 def create_directories():
     """Create all necessary output directories"""
     dirs = [
-        cfg.SAVE_MODEL_DIR,
+        cfg.MODEL_DIR,
         cfg.SCORES_TRAIN_DIR,
         cfg.SCORES_VAL_DIR,
         cfg.TRAINLOG_DIR,
@@ -196,7 +196,7 @@ def train_epoch(model, train_loader, criterion, optimizer, device):
             
             outputs_list.extend(outputs.squeeze().tolist())
             labels_list.extend(labels.squeeze().tolist())
-        
+
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
@@ -330,7 +330,7 @@ def train():
     criterion = get_criterion(device, train_labels)
 
     # Initialize logging
-    trainlog_file = os.path.join(cfg.TRAINLOG_DIR, f"{cfg.EXPERIMENT_NAME}.txt")
+    trainlog_file = os.path.join(cfg.LOG_DIR, f"trainlog/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.txt")
     with open(trainlog_file, "w") as log:
         log.write('Epoch, Training Loss, Validation Loss, Learning Rate\n')
     
@@ -378,7 +378,7 @@ def train():
                 "val_loss": val_loss
             }
             
-            model_path = os.path.join(cfg.SAVE_MODEL_DIR, f"{cfg.EXPERIMENT_NAME}_best.pth")
+            model_path = os.path.join(cfg.MODEL_DIR, f"{cfg.EXPERIMENT_NAME}.pth")
             torch.save(checkpoint, model_path)
             early_stop_counter = 0
         else:
@@ -398,23 +398,23 @@ def train():
     print("\nSaving predictions...")
     save_predictions(
         train_eids, train_lbls, train_preds,
-        os.path.join(cfg.SCORES_TRAIN_DIR, f"{cfg.EXPERIMENT_NAME}.csv")
+        os.path.join(cfg.SCORES_DIR, f"{cfg.TRAINING_MODE}/train/{cfg.TRAIN_COHORT}/{cfg.EXPERIMENT_NAME}.csv")
     )
     save_predictions(
         best_val_eids, best_val_labels, best_val_outputs,
-        os.path.join(cfg.SCORES_VAL_DIR, f"{cfg.EXPERIMENT_NAME}.csv")
+        os.path.join(cfg.SCORES_DIR, f"{cfg.TRAINING_MODE}/val/{cfg.TRAIN_COHORT}/{cfg.EXPERIMENT_NAME}.csv")
     )
     
     # Log results
     duration = time.time() - start_time
     
-    vallog_file = os.path.join(cfg.VALLOG_DIR, f"{cfg.EXPERIMENT_NAME}.txt")
+    vallog_file = os.path.join(cfg.LOG_DIR, f"vallog/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.txt")
     with open(vallog_file, "w") as log:
         log.write(f'Training completed\n')
         log.write(f'Best Validation Loss: {best_val_loss:.4f}\n')
         log.write(f'Stopped at epoch: {epoch + 1}\n')
     
-    timelog_file = os.path.join(cfg.TIMELOG_DIR, f"{cfg.EXPERIMENT_NAME}.txt")
+    timelog_file = os.path.join(cfg.LOG_DIR, f"timelog/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.txt")
     with open(timelog_file, "w") as log:
         log.write(f"Duration: {duration:.2f}s ({duration/60:.2f} min)\n")
         log.write(f"Start: {datetime.datetime.fromtimestamp(start_time)}\n")
@@ -427,7 +427,7 @@ def train():
     print("="*70)
     print(f"Duration: {duration:.2f}s ({duration/60:.2f} min)")
     print(f"Best validation loss: {best_val_loss:.4f}")
-    print(f"Model saved: {cfg.SAVE_MODEL_DIR}/{cfg.EXPERIMENT_NAME}_best.pth")
+    print(f"Model saved: {cfg.MODEL_DIR}/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.pth")
     print("="*70)
     
     return model, best_val_loss
