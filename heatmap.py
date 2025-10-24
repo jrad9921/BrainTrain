@@ -473,7 +473,7 @@ def main():
     heatmap_dir = os.path.join(cfg.EXPLAINABILITY_DIR, explainability_path)
     
     # Generate heatmaps
-    results = generate_heatmaps(
+    generate_heatmaps(
         heatmap_dir=heatmap_dir,
         attention_method=attention_method,
         attention_mode=attention_mode,
