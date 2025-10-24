@@ -16,7 +16,7 @@ TASK = 'regression'
 # ============================================================================
 
 TRAIN_COHORT = 'ukb'
-TEST_COHORT = 'ukb'+6
+TEST_COHORT = 'ukb'
 
 CSV_TRAIN = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
 CSV_VAL = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
