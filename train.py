@@ -375,7 +375,7 @@ def train():
                 "val_loss": val_loss
             }
             
-            model_path = os.path.join(cfg.MODEL_DIR, f"{cfg.EXPERIMENT_NAME}.pth")
+            model_path = os.path.join(cfg.MODEL_DIR, cfg.TRAINING_MODE, f"{cfg.EXPERIMENT_NAME}.pth")
             torch.save(checkpoint, model_path)
             early_stop_counter = 0
         else:
