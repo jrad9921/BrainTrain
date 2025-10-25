@@ -5,9 +5,9 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description='run training')
-parser.add_argument('-c', '--column', type=str, nargs='*', default=None, help='Select one  target column for trainig')
-parser.add_argument('-m', '--mode', type=str, nargs='*', default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
-parser.add_argument('-g', '--gpu', type=str, nargs='*', default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
+parser.add_argument('-c', '--column', type=str,  default=None, help='Select one  target column for trainig')
+parser.add_argument('-m', '--mode', type=str,  default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
+parser.add_argument('-g', '--gpu', type=str,  default=None, help='Select one of sfcn, dense, linear, ssl-finetuned, lora')
 args = parser.parse_args()
 
 
