@@ -9,15 +9,12 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
 from torch.utils.data import DataLoader
 from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
-import monai
 from dataloaders import dataloader
-from architectures import sfcn_cls, sfcn_ssl2, head, lora_layers
 import config as cfg
-
+from src import models, distribution, criterions
 
 def set_seed(seed):
     """Set random seeds for reproducibility"""
@@ -26,119 +23,6 @@ def set_seed(seed):
     np.random.seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
-
-
-def check_data_distribution(csv_path, column_name, task='classification'):
-    """Check and print data distribution"""
-    df = pd.read_csv(csv_path)
-    print(f"\nDataset shape: {df.shape}")
-    
-    if task == 'classification':
-        ratio = (df[column_name] == 1).sum() / (df[column_name] == 0).sum()
-        counts = df[column_name].value_counts()
-        print(f"Class distribution:\n{counts}")
-        print(f"Ratio (positive/negative): {ratio:.3f}")
-    elif task == 'regression':
-        print(f"Target variable: {column_name}")
-        print(f"Mean: {df[column_name].mean():.2f}")
-        print(f"Std: {df[column_name].std():.2f}")
-        print(f"Min: {df[column_name].min():.2f}")
-        print(f"Max: {df[column_name].max():.2f}")
-        print(f"Median: {df[column_name].median():.2f}")
-    
-    return df
-
-
-def create_model(device):
-    """Create model based on training mode and task"""
-    output_dim = 1 if cfg.TASK == 'regression' else cfg.N_CLASSES
-    
-    if cfg.TRAINING_MODE == 'sfcn':
-        model = sfcn_cls.SFCN(output_dim=output_dim).to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), cfg.LEARNING_RATE)
-        print(f"Using SFCN for {cfg.TASK}")
-    
-    elif cfg.TRAINING_MODE == 'dense':
-        model = monai.networks.nets.DenseNet121(
-            spatial_dims=3, 
-            in_channels=cfg.N_CHANNELS, 
-            out_channels=output_dim
-        ).to(device)
-        optimizer = torch.optim.AdamW(model.parameters(), cfg.LEARNING_RATE)
-        print(f"Using DenseNet121 for {cfg.TASK}")
-    
-    elif cfg.TRAINING_MODE in ['linear', 'ssl-finetuned']:
-        backbone = sfcn_ssl2.SFCN()
-        checkpoint = torch.load(cfg.PRETRAINED_MODEL, map_location=device)
-        backbone.load_state_dict(checkpoint['state_dict'], strict=False)
-        model = head.ClassifierHeadMLP_(backbone, output_dim=output_dim).to(device)
-        
-        if cfg.TRAINING_MODE == 'linear':
-            for param in model.backbone.parameters():
-                param.requires_grad = False
-            optimizer = torch.optim.AdamW(model.classifier.parameters(), cfg.LEARNING_RATE)
-            print(f"Using Linear Probing for {cfg.TASK}")
-        else:
-            for param in model.backbone.parameters():
-                param.requires_grad = True
-            optimizer = torch.optim.AdamW(model.parameters(), cfg.LEARNING_RATE)
-            print(f"Using SSL Fine-tuning for {cfg.TASK}")
-    
-    elif cfg.TRAINING_MODE == 'lora':
-        backbone = sfcn_ssl2.SFCN()
-        checkpoint = torch.load(cfg.PRETRAINED_MODEL, map_location=device)
-        backbone.load_state_dict(checkpoint['state_dict'], strict=False)
-        
-        backbone = lora_layers.apply_lora_to_model(
-            backbone,
-            rank=cfg.LORA_RANK,
-            alpha=cfg.LORA_ALPHA,
-            target_modules=cfg.LORA_TARGET_MODULES
-        )
-        
-        for name, param in backbone.named_parameters():
-            if 'lora' not in name:
-                param.requires_grad = False
-        
-        model = head.ClassifierHeadMLP_(backbone, output_dim=output_dim).to(device)
-        
-        lora_params = [p for n, p in model.backbone.named_parameters() 
-                      if 'lora' in n and p.requires_grad]
-        classifier_params = list(model.classifier.parameters())
-        
-        optimizer = torch.optim.AdamW(lora_params + classifier_params, cfg.LEARNING_RATE)
-        
-        print(f"LoRA applied for {cfg.TASK}")
-        print(f"Trainable LoRA params: {sum(p.numel() for p in lora_params):,}")
-        print(f"Trainable classifier params: {sum(p.numel() for p in classifier_params):,}")
-    else:
-        raise ValueError(f"Invalid TRAINING_MODE: {cfg.TRAINING_MODE}")
-    
-    return model, optimizer
-
-
-def get_criterion(device, train_labels=None):
-    """Get loss function based on task"""
-    if cfg.TASK == 'classification':
-        if train_labels is not None:
-            class_weights = compute_class_weight(
-                'balanced',
-                classes=np.array([0, 1]),
-                y=train_labels
-            )
-            class_weights = torch.tensor(class_weights, dtype=torch.float).to(device)
-            print(f"Class weights: {class_weights}")
-            criterion = nn.CrossEntropyLoss(weight=class_weights).to(device)
-        else:
-            criterion = nn.CrossEntropyLoss().to(device)
-    elif cfg.TASK == 'regression':
-        criterion = nn.MSELoss().to(device)
-        print("Using MSE Loss for regression")
-    else:
-        raise ValueError(f"Invalid TASK: {cfg.TASK}")
-    
-    return criterion
-
 
 def train_epoch(model, train_loader, criterion, optimizer, device):
     """Train for one epoch"""
@@ -294,7 +178,7 @@ def train():
     
     # Create model and optimizer
     print("\nInitializing model...")
-    model, optimizer = create_model(device)
+    model, optimizer = models.create_model(device)
     
     # Create scheduler
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -305,7 +189,7 @@ def train():
     )
     
     # Get criterion
-    criterion = get_criterion(device, train_labels)
+    criterion = criterions.get_criterion(device, train_labels)
 
     # Create log directories
     trainlog_dir = os.path.join(cfg.LOG_DIR, 'trainlog', cfg.TRAINING_MODE)
@@ -385,20 +269,12 @@ def train():
     
     # Save final predictions
     print("\nSaving predictions...")
-    train_pred_path = os.path.join(
-        cfg.SCORES_DIR, 
-        cfg.TRAINING_MODE, 
-        'train', 
-        cfg.TRAIN_COHORT, 
-        f"{cfg.EXPERIMENT_NAME}.csv"
-    )
-    val_pred_path = os.path.join(
-        cfg.SCORES_DIR, 
-        cfg.TRAINING_MODE, 
-        'val', 
-        cfg.TRAIN_COHORT, 
-        f"{cfg.EXPERIMENT_NAME}.csv"
-    )
+    train_pred_dir = os.path.join(cfg.SCORES_DIR, cfg.TRAINING_MODE, 'train', cfg.TRAIN_COHORT) 
+    train_pred_path = os.path.join(train_pred_dir,f"{cfg.EXPERIMENT_NAME}.csv")
+    val_pred_dir = os.path.join(cfg.SCORES_DIR, cfg.TRAINING_MODE, 'val', cfg.TRAIN_COHORT) 
+    val_pred_path = os.path.join(val_pred_dir,f"{cfg.EXPERIMENT_NAME}.csv")
+    os.makedirs(train_pred_dir, exist_ok=True)
+    os.makedirs(val_pred_dir, exist_ok=True)
     
     save_predictions(train_eids, train_lbls, train_preds, train_pred_path)
     save_predictions(best_val_eids, best_val_labels, best_val_outputs, val_pred_path)
@@ -455,13 +331,17 @@ def main():
     
     # Check data distributions
     print("\n=== Training Data ===")
-    check_data_distribution(cfg.CSV_TRAIN, cfg.COLUMN_NAME, cfg.TASK)
+    distribution.check_data_distribution(cfg.CSV_TRAIN, cfg.COLUMN_NAME, cfg.TASK)
     
     print("\n=== Validation Data ===")
-    check_data_distribution(cfg.CSV_VAL, cfg.COLUMN_NAME, cfg.TASK)
+    distribution.check_data_distribution(cfg.CSV_VAL, cfg.COLUMN_NAME, cfg.TASK)
     
     # Train model
     train()
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":
