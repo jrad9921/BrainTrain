@@ -1,6 +1,7 @@
 """
-Test script for brain MRI classification
+Test script for brain MRI 
 """
+#%%
 import os
 import numpy as np
 import pandas as pd
@@ -8,18 +9,18 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from sklearn.metrics import (
+    accuracy_score, classification_report,
     roc_auc_score, average_precision_score, 
     roc_curve, precision_recall_curve, auc,
     confusion_matrix, ConfusionMatrixDisplay,
-    precision_score, recall_score, f1_score, balanced_accuracy_score
-)
+    precision_score, recall_score, f1_score, balanced_accuracy_score)
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from dataloaders import dataloader
 from architectures import sfcn_cls, sfcn_ssl2, head, lora_layers
 import config as cfg
-
-
+import seaborn as sns
+#%%
 def load_model(model_path, device):
     """Load trained model"""
     if cfg.TRAINING_MODE == 'sfcn':
@@ -58,9 +59,9 @@ def load_model(model_path, device):
     
     print(f"Successfully loaded {cfg.TRAINING_MODE} model")
     model.eval()
+
     return model
-
-
+#%%
 def bootstrap_auc(y_true, y_score, curve="roc", n_bootstraps=1000, seed=42):
     """Calculate AUC with bootstrap confidence intervals"""
     rng = np.random.RandomState(seed)
@@ -83,8 +84,7 @@ def bootstrap_auc(y_true, y_score, curve="roc", n_bootstraps=1000, seed=42):
     lower = np.percentile(bootstrapped_scores, 2.5)
     upper = np.percentile(bootstrapped_scores, 97.5)
     return np.mean(bootstrapped_scores), lower, upper
-
-
+#%%
 def plot_roc_curve(y_true, y_score, test_cohort, save_path=None):
     """Plot ROC curve with confidence intervals"""
     fpr, tpr, _ = roc_curve(y_true, y_score)
@@ -112,7 +112,6 @@ def plot_roc_curve(y_true, y_score, test_cohort, save_path=None):
         print(f"ROC curve saved to {save_path}")
     plt.close()
 
-
 def plot_prc_curve(y_true, y_score, test_cohort, save_path=None):
     """Plot Precision-Recall curve with confidence intervals"""
     precision, recall, _ = precision_recall_curve(y_true, y_score)
@@ -139,10 +138,9 @@ def plot_prc_curve(y_true, y_score, test_cohort, save_path=None):
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        print(f"PRC curve saved to {save_path}")
+        print(f"PRC curve saved to {save_path}")        
     plt.close()
-
-
+#%%
 def plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=None):
     """Plot confusion matrix at specified threshold"""
     if threshold == 'youden':
@@ -189,6 +187,31 @@ def plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=None):
     }
 
 
+def evaluate_multiclass(model, dataloader, device):
+    model.eval()
+    y_true, y_pred = [], []
+
+    with torch.no_grad():
+        for x, y in dataloader:
+            x, y = x.to(device), y.to(device)
+            logits = model(x)
+            preds = torch.argmax(logits, dim=1)
+            y_true.extend(y.cpu().numpy())
+            y_pred.extend(preds.cpu().numpy())
+
+    print("Accuracy:", accuracy_score(y_true, y_pred))
+    print("\nClassification Report:\n", classification_report(y_true, y_pred, digits=3))
+    print("\nConfusion Matrix:\n", confusion_matrix(y_true, y_pred))
+
+def plot_confusion_matrix_multi(cm, class_names):
+    plt.figure(figsize=(6,5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=class_names, yticklabels=class_names)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    plt.show()
+
+#%%
 def test(model_path, output_dir, log_dir):
     """Main test function"""
     device = cfg.DEVICE
@@ -237,8 +260,7 @@ def test(model_path, output_dir, log_dir):
         test_dataset,
         batch_size=cfg.BATCH_SIZE,
         num_workers=cfg.NUM_WORKERS,
-        drop_last=False
-    )
+        drop_last=False)
     
     print(f"Test dataset size: {len(test_dataset)}")
     
@@ -265,6 +287,108 @@ def test(model_path, output_dir, log_dir):
     y_true = np.array(test_labels).astype(int)
     y_score = np.array(test_outputs_binary).astype(float)
     
+    # Calculate metrics with bootstrapping
+    print("\nCalculating metrics...")
+    auroc = roc_auc_score(y_true, y_score)
+    auprc = average_precision_score(y_true, y_score)
+    
+    bootstrapped_auroc = []
+    bootstrapped_auprc = []
+    rng = np.random.RandomState(42)
+    
+    for _ in range(1000):
+        indices = rng.randint(0, len(y_true), len(y_true))
+        y_true_sample = y_true[indices]
+        y_score_sample = y_score[indices]
+        
+        if len(np.unique(y_true_sample)) < 2:
+            continue
+        
+        bootstrapped_auroc.append(roc_auc_score(y_true_sample, y_score_sample))
+        bootstrapped_auprc.append(average_precision_score(y_true_sample, y_score_sample))
+    
+    ci_auroc_lower = np.percentile(bootstrapped_auroc, 2.5)
+    ci_auroc_upper = np.percentile(bootstrapped_auroc, 97.5)
+    ci_auprc_lower = np.percentile(bootstrapped_auprc, 2.5)
+    ci_auprc_upper = np.percentile(bootstrapped_auprc, 97.5)
+    
+    print("\n" + "="*70)
+    print("RESULTS")
+    print("="*70)
+    print(f"AUROC: {auroc:.3f} (95% CI: {ci_auroc_lower:.3f}–{ci_auroc_upper:.3f})")
+    print(f"AUPRC: {auprc:.3f} (95% CI: {ci_auprc_lower:.3f}–{ci_auprc_upper:.3f})")
+    print("="*70)
+    
+    # Save predictions
+    predictions_df = pd.DataFrame({
+        'eid': test_eids,
+        'label': test_labels,
+        'prediction': test_outputs_binary
+    })
+
+    pred_path = os.path.join(scores_dir, f'{cfg.EXPERIMENT_NAME}.csv')
+    predictions_df.to_csv(pred_path, index=False)
+    print(f"\nPredictions saved to {pred_path}")
+    
+    # Save summary metrics
+    summary_df = pd.DataFrame([{
+        'test_cohort': cfg.TEST_COHORT,
+        'AUROC': auroc,
+        'AUROC_CI_lower': ci_auroc_lower,
+        'AUROC_CI_upper': ci_auroc_upper,
+        'AUPRC': auprc,
+        'AUPRC_CI_lower': ci_auprc_lower,
+        'AUPRC_CI_upper': ci_auprc_upper}])
+
+    summary_path = os.path.join(summary_dir, f'{cfg.EXPERIMENT_NAME}.csv')
+    summary_df.to_csv(summary_path, index=False)
+    print(f"Summary metrics saved to {summary_path}")
+    
+    # Plot ROC curve
+    roc_path = os.path.join(roc_dir, f'{cfg.EXPERIMENT_NAME}.png')
+    plot_roc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=roc_path)
+    
+    # Plot PRC curve
+    prc_path = os.path.join(prc_dir, f'{cfg.EXPERIMENT_NAME}.png')
+    plot_prc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=prc_path)
+    
+    # Plot confusion matrix
+    cm_path = os.path.join(cm_dir, f'{cfg.EXPERIMENT_NAME}.png')
+    cm_metrics = plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=cm_path)
+    
+    # Save confusion matrix metrics
+    cm_df = pd.DataFrame([cm_metrics])
+    cm_metrics_path = os.path.join(metrics_dir, f'{cfg.EXPERIMENT_NAME}.csv')
+    cm_df.to_csv(cm_metrics_path, index=False)
+    print(f"Confusion matrix metrics saved to {cm_metrics_path}")
+    
+    print("\nTesting completed!")
+    return summary_df
+#%%
+def main():
+    """Main function"""
+    if torch.cuda.is_available():
+        torch.cuda.set_device(cfg.DEVICE)
+    torch.manual_seed(42)
+    
+    model_path = f'{cfg.MODEL_DIR}/{cfg.TRAINING_MODE}/{cfg.EXPERIMENT_NAME}.pth'
+
+    print("\n" + "="*70)
+    print("TEST CONFIGURATION")
+    print("="*70)
+    print(f"Training mode: {cfg.TRAINING_MODE}")
+    print(f"Model: {model_path}")
+    print(f"Test cohort: {cfg.TEST_COHORT}")
+    print(f"Test CSV: {cfg.CSV_TEST}")
+    print(f"Scores directory: {cfg.SCORES_DIR}")
+    print(f"Evaluation directory: {cfg.EVALUATION_DIR}")
+    print("="*70)
+    # Run testing
+    test(model_path, cfg.SCORES_DIR, cfg.EVALUATION_DIR)    
+    print("\n✓ All done!")
+
+if __name__ == "__main__":
+    main()    
     # Calculate metrics with bootstrapping
     print("\nCalculating metrics...")
     auroc = roc_auc_score(y_true, y_score)
