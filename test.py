@@ -387,8 +387,6 @@ def main():
     test(model_path, cfg.SCORES_DIR, cfg.EVALUATION_DIR)    
     print("\n✓ All done!")
 
-if __name__ == "__main__":
-    main()    
     # Calculate metrics with bootstrapping
     print("\nCalculating metrics...")
     auroc = roc_auc_score(y_true, y_score)
