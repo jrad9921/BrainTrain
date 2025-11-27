@@ -347,13 +347,19 @@ def test(model_path, output_dir, log_dir):
     # Plot ROC curve
     roc_path = os.path.join(roc_dir, f'{cfg.EXPERIMENT_NAME}.png')
     plot_roc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=roc_path)
+    roc_path = os.path.join(roc_dir, f'{cfg.EXPERIMENT_NAME}.svg')
+    plot_roc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=roc_path)
     
     # Plot PRC curve
     prc_path = os.path.join(prc_dir, f'{cfg.EXPERIMENT_NAME}.png')
     plot_prc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=prc_path)
+    prc_path = os.path.join(prc_dir, f'{cfg.EXPERIMENT_NAME}.svg')
+    plot_prc_curve(y_true, y_score, cfg.TEST_COHORT, save_path=prc_path)
     
     # Plot confusion matrix
     cm_path = os.path.join(cm_dir, f'{cfg.EXPERIMENT_NAME}.png')
+    cm_metrics = plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=cm_path)
+    cm_path = os.path.join(cm_dir, f'{cfg.EXPERIMENT_NAME}.svg')
     cm_metrics = plot_confusion_matrix(y_true, y_score, threshold='youden', save_path=cm_path)
     
     # Save confusion matrix metrics
