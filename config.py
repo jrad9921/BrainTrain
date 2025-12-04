@@ -84,7 +84,7 @@ SCORES_DIR = f'/mnt/bulk-neptune/radhika/project/scores'
 LOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs'
 EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/evaluations'
 EXPLAINABILITY_DIR = f"/mnt/bulk-neptune/radhika/project/explainability"
-  
+KAPLAN_MEIER = False
 # ============================================================================
 # HEATMAP CONFIGURATION 
 # ============================================================================
