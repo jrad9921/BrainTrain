@@ -13,8 +13,8 @@ args = parser.parse_args()
 # BASIC SETTINGS
 # ============================================================================
 
-COLUMN_NAME = 'ms'
-CSV_NAME = 'ms-cn_balanced'
+COLUMN_NAME = 'label-name'
+CSV_NAME = 'csv-name'
 
 TRAINING_MODE = 'sfcn'  # Options: 'sfcn', 'dense', 'linear', 'ssl-finetuned', 'lora'
 TASK = 'classification'
@@ -26,12 +26,12 @@ TASK = 'classification'
 TRAIN_COHORT = 'mspaths'
 TEST_COHORT = 'BrainLat'
 
-CSV_TRAIN = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/train/{CSV_NAME}.csv'
-CSV_VAL = f'/mnt/bulk-neptune/radhika/project/data/{TRAIN_COHORT}/val/{CSV_NAME}.csv'
-CSV_TEST = f'/mnt/bulk-neptune/radhika/project/data/{TEST_COHORT}/test/{CSV_NAME}.csv'
+CSV_TRAIN = 'path/to/your/file'
+CSV_VAL = 'path/to/your/file'
+CSV_TEST = 'path/to/your/file'
 
-TENSOR_DIR = f'/mnt/bulk-neptune/radhika/project/images/{TRAIN_COHORT}/npy96'
-TENSOR_DIR_TEST = f'/mnt/bulk-neptune/radhika/project/images/{TEST_COHORT}/npy96'
+TENSOR_DIR = 'path/to/your/folder'
+TENSOR_DIR_TEST = 'path/to/your/folder'
 
 # ============================================================================
 # MODEL SETTINGS
@@ -49,8 +49,7 @@ LORA_TARGET_MODULES = ['feature_extractor.conv_']
 SSL_COHORT = 'ukb-nako'
 SSL_BATCH_SIZE = 16
 SSL_EPOCHS = 1000
-PRETRAINED_MODEL = (f'/mnt/bulk-neptune/radhika/project/models/ssl/sfcn/{SSL_COHORT}/'
-                   f'{SSL_COHORT}{IMG_SIZE}/final_model_b{SSL_BATCH_SIZE}_e{SSL_EPOCHS}.pt')
+PRETRAINED_MODEL = 'path/to/your/file'
 
 
 # ============================================================================
@@ -79,11 +78,11 @@ SCHEDULER_PATIENCE = 3
 EXPERIMENT_NAME = f"{CSV_NAME}_b{BATCH_SIZE}_im{IMG_SIZE}"
 
 # Output directories
-MODEL_DIR = f'/mnt/bulk-neptune/radhika/project/models'
-SCORES_DIR = f'/mnt/bulk-neptune/radhika/project/scores'
-LOG_DIR = f'/mnt/bulk-neptune/radhika/project/logs'
-EVALUATION_DIR = f'/mnt/bulk-neptune/radhika/project/evaluations'
-EXPLAINABILITY_DIR = f"/mnt/bulk-neptune/radhika/project/explainability"
+MODEL_DIR = 'path/to/your/folder'
+SCORES_DIR = 'path/to/your/folder'
+LOG_DIR = 'path/to/your/folder'
+EVALUATION_DIR = 'path/to/your/folder'
+EXPLAINABILITY_DIR = 'path/to/your/folder'
 KAPLAN_MEIER = False
 # ============================================================================
 # HEATMAP CONFIGURATION 
