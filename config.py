@@ -23,8 +23,8 @@ TASK = 'classification'
 # DATA PATHS
 # ============================================================================
 
-TRAIN_COHORT = 'mspaths'
-TEST_COHORT = 'BrainLat'
+TRAIN_COHORT = 'cohort-name'
+TEST_COHORT = 'cohort-name'
 
 CSV_TRAIN = 'path/to/your/file'
 CSV_VAL = 'path/to/your/file'
@@ -46,7 +46,7 @@ LORA_ALPHA = 32
 LORA_TARGET_MODULES = ['feature_extractor.conv_']
 
 # SSL Pretrained Model
-SSL_COHORT = 'ukb-nako'
+SSL_COHORT = 'cohort-name'
 SSL_BATCH_SIZE = 16
 SSL_EPOCHS = 1000
 PRETRAINED_MODEL = 'path/to/your/file'
